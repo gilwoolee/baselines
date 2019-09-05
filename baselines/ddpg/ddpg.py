@@ -18,6 +18,8 @@ try:
 except ImportError:
     MPI = None
 
+import os.path as osp
+
 def learn(network, env,
           seed=None,
           total_timesteps=None,
@@ -42,6 +44,8 @@ def learn(network, env,
           tau=0.01,
           eval_env=None,
           param_noise_adaption_interval=50,
+          save_interval=None,
+          load_path=None,
           **network_kwargs):
 
     set_global_seeds(seed)
@@ -91,6 +95,7 @@ def learn(network, env,
         batch_size=batch_size, action_noise=action_noise, param_noise=param_noise, critic_l2_reg=critic_l2_reg,
         actor_lr=actor_lr, critic_lr=critic_lr, enable_popart=popart, clip_norm=clip_norm,
         reward_scale=reward_scale)
+
     logger.info('Using agent with the following configuration:')
     logger.info(str(agent.__dict__.items()))
 
@@ -99,6 +104,11 @@ def learn(network, env,
     sess = U.get_session()
     # Prepare everything.
     agent.initialize(sess)
+
+    if load_path is not None:
+        agent.load(load_path)
+        logger.log('Loaded model from {}'.format(load_path))
+
     sess.graph.finalize()
 
     agent.reset()
@@ -114,7 +124,6 @@ def learn(network, env,
     t = 0 # scalar
 
     epoch = 0
-
 
 
     start_time = time.time()
@@ -269,5 +278,10 @@ def learn(network, env,
                 with open(os.path.join(logdir, 'eval_env_state.pkl'), 'wb') as f:
                     pickle.dump(eval_env.get_state(), f)
 
+        if save_interval and (epoch % save_interval == 0 or epoch == 1) and logger.get_dir():
+            print(epoch, save_interval)
+            savepath = osp.join(logger.get_dir(), 'checkpoint%.5i'%epoch)
+            print('Saving to', savepath)
+            agent.save(savepath)
 
     return agent

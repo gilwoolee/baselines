@@ -47,6 +47,8 @@ class Monitor(Wrapper):
         self.rewards = []
         self.needs_reset = False
 
+    def set_state(self, state):
+        return self.env.set_state(state)
 
     def step(self, action):
         if self.needs_reset:

@@ -23,7 +23,8 @@ def make_vec_env(env_id, env_type, num_env, seed,
                  start_index=0,
                  reward_scale=1.0,
                  flatten_dict_observations=True,
-                 gamestate=None):
+                 gamestate=None,
+                 **kwargs):
     """
     Create a wrapped, monitored SubprocVecEnv for Atari and MuJoCo.
     """
@@ -42,14 +43,33 @@ def make_vec_env(env_id, env_type, num_env, seed,
             wrapper_kwargs=wrapper_kwargs
         )
 
+    def make_thunk_with_args(rank, **kwargs):
+        return lambda: make_env(
+            env_id=env_id,
+            env_type=env_type,
+            subrank = rank,
+            seed=seed,
+            reward_scale=reward_scale,
+            gamestate=gamestate,
+            flatten_dict_observations=flatten_dict_observations,
+            wrapper_kwargs={**wrapper_kwargs, **kwargs}
+        )
+
     set_global_seeds(seed)
-    if num_env > 1:
-        return SubprocVecEnv([make_thunk(i + start_index) for i in range(num_env)])
+    if 'rockstates' not in kwargs:
+        if num_env > 1:
+            return SubprocVecEnv([make_thunk(i + start_index) for i in range(num_env)])
+        else:
+            return DummyVecEnv([make_thunk(start_index)])
     else:
-        return DummyVecEnv([make_thunk(start_index)])
+        rockstates = kwargs['rockstates']
+        if num_env > 1:
+            return SubprocVecEnv([make_thunk_with_args(i + start_index, rockstate=rockstate) for i, rockstate in enumerate(rockstates)])
+        else:
+            return DummyVecEnv([make_thunk(start_index)])
 
 
-def make_env(env_id, env_type, subrank=0, seed=None, reward_scale=1.0, gamestate=None, flatten_dict_observations=True, wrapper_kwargs=None):
+def make_env(env_id, env_type, subrank=0, seed=None, reward_scale=1.0, gamestate=None, flatten_dict_observations=True, wrapper_kwargs=None, **kwargs):
     mpi_rank = MPI.COMM_WORLD.Get_rank() if MPI else 0
     wrapper_kwargs = wrapper_kwargs or {}
     if env_type == 'atari':
@@ -74,6 +94,10 @@ def make_env(env_id, env_type, subrank=0, seed=None, reward_scale=1.0, gamestate
         env = wrap_deepmind(env, **wrapper_kwargs)
     elif env_type == 'retro':
         env = retro_wrappers.wrap_deepmind_retro(env, **wrapper_kwargs)
+    if 'rocksample' in env_id and 'rockstate' in wrapper_kwargs:
+        rockstate = wrapper_kwargs['rockstate']
+        print('rockstate', rockstate)
+        env.env.env.env.env.set_start_rock_state(rockstate)
 
     if reward_scale != 1:
         env = retro_wrappers.RewardScaler(env, reward_scale)
@@ -146,6 +170,7 @@ def common_arg_parser():
     parser.add_argument('--save_video_length', help='Length of recorded video. Default: 200', default=200, type=int)
     parser.add_argument('--play', default=False, action='store_true')
     parser.add_argument('--extra_import', help='Extra module to import to access external environments', type=str, default=None)
+    parser.add_argument('--output', help='Write to text', type=str, default=None)
     return parser
 
 def robotics_arg_parser():

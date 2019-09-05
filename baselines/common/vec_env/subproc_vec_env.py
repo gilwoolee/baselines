@@ -13,6 +13,17 @@ def worker(remote, parent_remote, env_fn_wrapper):
                 if done:
                     ob = env.reset()
                 remote.send((ob, reward, done, info))
+            elif cmd == 'reset_state_and_step':
+                ob, reward, done, info, state = env.reset_state_and_step(data[0], data[1])
+                if done:
+                    ob = env.reset()
+                remote.send((ob, reward, done, info, state))
+            elif cmd == 'set_state':
+                result = env.set_state(data)
+                remote.send(result)
+            elif cmd == 'get_state':
+                result = env.get_state()
+                remote.send(result)
             elif cmd == 'reset':
                 ob = env.reset()
                 remote.send(ob)
@@ -24,7 +35,7 @@ def worker(remote, parent_remote, env_fn_wrapper):
             elif cmd == 'get_spaces':
                 remote.send((env.observation_space, env.action_space))
             else:
-                raise NotImplementedError
+                raise NotImplementedError(cmd + " not implemented")
     except KeyboardInterrupt:
         print('SubprocVecEnv worker: got KeyboardInterrupt')
     finally:
@@ -72,6 +83,43 @@ class SubprocVecEnv(VecEnv):
         self.waiting = False
         obs, rews, dones, infos = zip(*results)
         return _flatten_obs(obs), np.stack(rews), np.stack(dones), infos
+
+    def set_state_async(self, states):
+        self._assert_not_closed()
+        for remote, state in zip(self.remotes, states):
+            remote.send(('set_state', state))
+        self.waiting = True
+
+    def set_state_wait(self):
+        self._assert_not_closed()
+        results = [remote.recv() for remote in self.remotes]
+        self.waiting = False
+        return results
+
+    def get_state_async(self):
+        self._assert_not_closed()
+        for remote in self.remotes:
+            remote.send(('get_state', None))
+        self.waiting = True
+
+    def get_state_wait(self):
+        self._assert_not_closed()
+        results = [remote.recv() for remote in self.remotes]
+        self.waiting = False
+        return np.array(results)
+
+    def reset_state_and_step_async(self, states, actions):
+        self._assert_not_closed()
+        for remote, state, action in zip(self.remotes, states, actions):
+            remote.send(('reset_state_and_step', (state, action)))
+        self.waiting = True
+
+    def reset_state_and_step_wait(self):
+        self._assert_not_closed()
+        results = [remote.recv() for remote in self.remotes]
+        self.waiting = False
+        obs, rews, dones, infos, states = zip(*results)
+        return _flatten_obs(obs), np.stack(rews), np.stack(dones), infos, np.stack(states)
 
     def reset(self):
         self._assert_not_closed()

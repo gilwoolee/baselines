@@ -238,7 +238,8 @@ def flatgrad(loss, var_list, clip_norm=None):
     ])
 
 class SetFromFlat(object):
-    def __init__(self, var_list, dtype=tf.float32):
+    def __init__(self, var_list, sess=None, dtype=tf.float32):
+        self.sess = sess
         assigns = []
         shapes = list(map(var_shape, var_list))
         total_size = np.sum([intprod(shape) for shape in shapes])
@@ -253,14 +254,21 @@ class SetFromFlat(object):
         self.op = tf.group(*assigns)
 
     def __call__(self, theta):
-        tf.get_default_session().run(self.op, feed_dict={self.theta: theta})
+        if self.sess is None:
+            tf.get_default_session().run(self.op, feed_dict={self.theta: theta})
+        else:
+            self.sess.run(self.op, feed_dict={self.theta: theta})
 
 class GetFlat(object):
-    def __init__(self, var_list):
+    def __init__(self, var_list, sess=None):
+        self.sess = sess
         self.op = tf.concat(axis=0, values=[tf.reshape(v, [numel(v)]) for v in var_list])
 
     def __call__(self):
-        return tf.get_default_session().run(self.op)
+        if self.sess is None:
+            return tf.get_default_session().run(self.op)
+        else:
+            return self.sess.run(self.op)
 
 def flattenallbut0(x):
     return tf.reshape(x, [-1, intprod(x.get_shape().as_list()[1:])])

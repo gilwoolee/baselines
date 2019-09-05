@@ -13,6 +13,7 @@ try:
     from mpi4py import MPI
 except ImportError:
     MPI = None
+from baselines.common.tf_util import load_variables, save_variables
 
 def normalize(x, stats):
     if stats is None:
@@ -282,6 +283,7 @@ class DDPG(object):
 
         B = obs0.shape[0]
         for b in range(B):
+            # import IPython; IPython.embed(); import sys; sys.exit(0)
             self.memory.append(obs0[b], action[b], reward[b], obs1[b], terminal1[b])
             if self.normalize_observations:
                 self.obs_rms.update(np.array([obs0[b]]))
@@ -399,3 +401,9 @@ class DDPG(object):
             self.sess.run(self.perturb_policy_ops, feed_dict={
                 self.param_noise_stddev: self.param_noise.current_stddev,
             })
+
+    def save(self, path):
+        save_variables(path)
+
+    def load(self, path):
+        load_variables(path)

@@ -56,6 +56,37 @@ class DummyVecEnv(VecEnv):
         return (self._obs_from_buf(), np.copy(self.buf_rews), np.copy(self.buf_dones),
                 self.buf_infos.copy())
 
+    def set_state_async(self, states):
+        self.states = states
+
+    def set_state_wait(self):
+        results = []
+        for e in range(self.num_envs):
+            s = self.states[e]
+            results += [self.envs[e].set_state(s)]
+
+        return results
+
+    def get_state_async(self):
+        pass
+
+    def get_state_wait(self):
+        states = [e.get_state() for e in self.envs]
+        return states
+
+    def reset_state_and_step_async(self, states, actions):
+        self.states = states
+        self.actions = actions
+
+    def reset_state_and_step_wait(self):
+        for e in range(self.num_envs):
+            obs, self.buf_rews[e], self.buf_dones[e], self.buf_infos[e], states[e] = self.envs[e].reset_state_and_step(self.states[e], self.actions[e])
+            if done:
+                obs = self.envs[e].reset()
+            self._save_obs(e, obs)
+        return (self._obs_from_buf(), np.copy(self.buf_rews), np.copy(self.buf_dones),
+                self.buf_infos.copy(), states)
+
     def reset(self):
         for e in range(self.num_envs):
             obs = self.envs[e].reset()

@@ -80,6 +80,88 @@ class VecEnv(ABC):
         """
         pass
 
+    @abstractmethod
+    def set_state_async(self, states):
+        """
+        Tell all the environments to start taking a step
+        with the given actions.
+        Call step_wait() to get the results of the step.
+
+        You should not call this if a step_async run is
+        already pending.
+        """
+        pass
+
+    @abstractmethod
+    def set_state_wait(self):
+        """
+        Wait for the step taken with step_async().
+
+        Returns (obs, rews, dones, infos):
+         - obs: an array of observations, or a dict of
+                arrays of observations.
+         - rews: an array of rewards
+         - dones: an array of "episode done" booleans
+         - infos: a sequence of info objects
+        """
+        pass
+
+
+    @abstractmethod
+    def get_state_async(self):
+        """
+        Tell all the environments to start taking a step
+        with the given actions.
+        Call step_wait() to get the results of the step.
+
+        You should not call this if a step_async run is
+        already pending.
+        """
+        pass
+
+    @abstractmethod
+    def get_state_wait(self):
+        """
+        Wait for the step taken with step_async().
+
+        Returns (obs, rews, dones, infos):
+         - obs: an array of observations, or a dict of
+                arrays of observations.
+         - rews: an array of rewards
+         - dones: an array of "episode done" booleans
+         - infos: a sequence of info objects
+        """
+        pass
+
+
+
+    @abstractmethod
+    def reset_state_and_step_async(self, states, actions):
+        """
+        Tell all the environments to start taking a step
+        with the given actions.
+        Call step_wait() to get the results of the step.
+
+        You should not call this if a step_async run is
+        already pending.
+        """
+        pass
+
+    @abstractmethod
+    def reset_state_and_step_wait(self):
+        """
+        Wait for the step taken with step_async().
+
+        Returns (obs, rews, dones, infos):
+         - obs: an array of observations, or a dict of
+                arrays of observations.
+         - rews: an array of rewards
+         - dones: an array of "episode done" booleans
+         - infos: a sequence of info objects
+        """
+        pass
+
+
     def close_extras(self):
         """
         Clean up the  extra resources, beyond what's in this base class.
@@ -103,6 +185,18 @@ class VecEnv(ABC):
         """
         self.step_async(actions)
         return self.step_wait()
+
+    def set_state(self, states):
+        self.set_state_async(states)
+        return self.set_state_wait()
+
+    def get_state(self):
+        self.get_state_async()
+        return self.get_state_wait()
+
+    def reset_state_and_step(self, states, actions):
+        self.reset_state_and_step_async(states, actions)
+        return self.reset_state_and_step_wait()
 
     def render(self, mode='human'):
         imgs = self.get_images()
@@ -167,6 +261,78 @@ class VecEnvWrapper(VecEnv):
 
     def get_images(self):
         return self.venv.get_images()
+
+    def set_state_async(self, states):
+        """
+        Tell all the environments to start taking a step
+        with the given actions.
+        Call step_wait() to get the results of the step.
+
+        You should not call this if a step_async run is
+        already pending.
+        """
+        raise NotImplementedError
+
+    def set_state_wait(self):
+        """
+        Wait for the step taken with step_async().
+
+        Returns (obs, rews, dones, infos):
+         - obs: an array of observations, or a dict of
+                arrays of observations.
+         - rews: an array of rewards
+         - dones: an array of "episode done" booleans
+         - infos: a sequence of info objects
+        """
+        raise NotImplementedError
+
+    def get_state_async(self):
+        """
+        Tell all the environments to start taking a step
+        with the given actions.
+        Call step_wait() to get the results of the step.
+
+        You should not call this if a step_async run is
+        already pending.
+        """
+        raise NotImplementedError
+
+    def get_state_wait(self):
+        """
+        Wait for the step taken with step_async().
+
+        Returns (obs, rews, dones, infos):
+         - obs: an array of observations, or a dict of
+                arrays of observations.
+         - rews: an array of rewards
+         - dones: an array of "episode done" booleans
+         - infos: a sequence of info objects
+        """
+        raise NotImplementedError
+
+    def reset_state_and_step_async(self, states, actions):
+        """
+        Tell all the environments to start taking a step
+        with the given actions.
+        Call step_wait() to get the results of the step.
+
+        You should not call this if a step_async run is
+        already pending.
+        """
+        raise NotImplementedError
+
+    def reset_state_and_step_wait(self):
+        """
+        Wait for the step taken with step_async().
+
+        Returns (obs, rews, dones, infos):
+         - obs: an array of observations, or a dict of
+                arrays of observations.
+         - rews: an array of rewards
+         - dones: an array of "episode done" booleans
+         - infos: a sequence of info objects
+        """
+        raise NotImplementedError
 
 class CloudpickleWrapper(object):
     """
