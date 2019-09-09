@@ -12,6 +12,7 @@ class AbstractEnvRunner(ABC):
         self.nsteps = nsteps
         self.states = model.initial_state
         self.dones = [False for _ in range(nenv)]
+        self.infos = []
 
     @abstractmethod
     def run(self):
