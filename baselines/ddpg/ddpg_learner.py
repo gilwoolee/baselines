@@ -18,7 +18,7 @@ from baselines.common.tf_util import load_variables, save_variables
 def normalize(x, stats):
     if stats is None:
         return x
-    return (x - stats.mean) / stats.std
+    return (x - stats.mean) / (stats.std + 1e-8)
 
 
 def denormalize(x, stats):

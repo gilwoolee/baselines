@@ -12,10 +12,9 @@ extras = {
         'filelock',
         'pytest',
         'pytest-forked',
-        'atari-py'
-    ],
-    'bullet': [
-        'pybullet',
+        'atari-py',
+        'matplotlib',
+        'pandas'
     ],
     'mpi': [
         'mpi4py'
@@ -32,12 +31,10 @@ setup(name='baselines',
       packages=[package for package in find_packages()
                 if package.startswith('baselines')],
       install_requires=[
-          'gym',
+          'gym>=0.10.0, <1.0.0',
           'scipy',
           'tqdm',
           'joblib',
-          'dill',
-          'progressbar2',
           'cloudpickle',
           'click',
           'opencv-python'
