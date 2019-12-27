@@ -110,3 +110,12 @@ class DummyVecEnv(VecEnv):
             return self.envs[0].render(mode=mode)
         else:
             return super().render(mode=mode)
+
+    def set_bayes_filter_async(self, net_file):
+        pass
+
+    def set_bayes_filter_wait(self):
+        results = []
+        for e in range(self.num_envs):
+            results += [self.envs[e].set_bayes_filter(net_file)]
+        return results

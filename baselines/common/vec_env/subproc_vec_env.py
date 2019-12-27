@@ -36,6 +36,10 @@ def worker(remote, parent_remote, env_fn_wrapper):
                 break
             elif cmd == 'get_spaces_spec':
                 remote.send((env.observation_space, env.action_space, env.spec))
+            elif cmd == 'get_spaces':
+                remote.send((env.observation_space, env.action_space))
+            elif cmd == 'set_bayes_filter':
+                remote.send((env.set_bayes_filter(data)))
             else:
                 raise NotImplementedError(cmd + " not implemented")
     except KeyboardInterrupt:
@@ -153,6 +157,18 @@ class SubprocVecEnv(VecEnv):
     def __del__(self):
         if not self.closed:
             self.close()
+
+    def set_bayes_filter_async(self, net_file):
+        self._assert_not_closed()
+        for remote in self.remotes:
+            remote.send(('set_bayes_filter', net_file))
+        self.waiting = True
+
+    def set_bayes_filter_wait(self):
+        self._assert_not_closed()
+        results = [remote.recv() for remote in self.remotes]
+        self.waiting = False
+        return np.array(results)
 
 def _flatten_obs(obs):
     assert isinstance(obs, (list, tuple))

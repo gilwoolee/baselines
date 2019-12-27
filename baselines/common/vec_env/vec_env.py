@@ -166,6 +166,31 @@ class VecEnv(ABC):
         """
         pass
 
+    @abstractmethod
+    def set_bayes_filter_async(self, net_file):
+        """
+        Tell all the environments to start taking a step
+        with the given actions.
+        Call step_wait() to get the results of the step.
+
+        You should not call this if a step_async run is
+        already pending.
+        """
+        pass
+
+    @abstractmethod
+    def set_bayes_filter_wait(self):
+        """
+        Wait for the step taken with step_async().
+
+        Returns (obs, rews, dones, infos):
+         - obs: an array of observations, or a dict of
+                arrays of observations.
+         - rews: an array of rewards
+         - dones: an array of "episode done" booleans
+         - infos: a sequence of info objects
+        """
+        pass
 
     def close_extras(self):
         """
@@ -327,6 +352,30 @@ class VecEnvWrapper(VecEnv):
         raise NotImplementedError
 
     def reset_state_and_step_wait(self):
+        """
+        Wait for the step taken with step_async().
+
+        Returns (obs, rews, dones, infos):
+         - obs: an array of observations, or a dict of
+                arrays of observations.
+         - rews: an array of rewards
+         - dones: an array of "episode done" booleans
+         - infos: a sequence of info objects
+        """
+        raise NotImplementedError
+
+    def set_bayes_filter_async(self, net_file):
+        """
+        Tell all the environments to start taking a step
+        with the given actions.
+        Call step_wait() to get the results of the step.
+
+        You should not call this if a step_async run is
+        already pending.
+        """
+        raise NotImplementedError
+
+    def set_bayes_filter_wait(self):
         """
         Wait for the step taken with step_async().
 
