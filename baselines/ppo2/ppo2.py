@@ -196,6 +196,9 @@ def learn(*, network, env, total_timesteps, eval_env = None, seed=None, nsteps=2
         if update_fn is not None:
             update_fn(update)
 
+        print('eprewmean', safemean([epinfo['r'] for epinfo in epinfobuf]))
+        print('eplenmean', safemean([epinfo['l'] for epinfo in epinfobuf]))
+
         if update % log_interval == 0 or update == 1:
             # Calculates if value function is a good predicator of the returns (ev > 1)
             # or if it's just worse than predicting nothing (ev =< 0)
