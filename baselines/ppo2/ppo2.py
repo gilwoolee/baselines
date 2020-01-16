@@ -114,7 +114,6 @@ def learn(*, network, env, total_timesteps, eval_env = None, seed=None, nsteps=2
     runner = Runner(env=env, model=model, nsteps=nsteps, gamma=gamma, lam=lam)
     if eval_env is not None:
         eval_runner = Runner(env = eval_env, model = model, nsteps = nsteps, gamma = gamma, lam= lam)
-
     epinfobuf = deque(maxlen=100)
     if eval_env is not None:
         eval_epinfobuf = deque(maxlen=100)
@@ -142,6 +141,7 @@ def learn(*, network, env, total_timesteps, eval_env = None, seed=None, nsteps=2
         obs, returns, masks, actions, values, neglogpacs, states, epinfos = runner.run() #pylint: disable=E0632
         if eval_env is not None:
             eval_obs, eval_returns, eval_masks, eval_actions, eval_values, eval_neglogpacs, eval_states, eval_epinfos = eval_runner.run() #pylint: disable=E0632
+            print('eval runner separate')
 
         if update % log_interval == 0 and is_mpi_root: logger.info('Done.')
 
@@ -186,6 +186,13 @@ def learn(*, network, env, total_timesteps, eval_env = None, seed=None, nsteps=2
         # Calculate the fps (frame per second)
         fps = int(nbatch / (tnow - tstart))
 
+        print('Update {}'.format(update))
+        print('rew     ', safemean([epinfo['r'] for epinfo in epinfobuf]))
+        print('len     ', safemean([epinfo['l'] for epinfo in epinfobuf]))
+        if eval_env is not None:
+            print('eval-rew', safemean([epinfo['r'] for epinfo in eval_epinfobuf]))
+            print('eval-len', safemean([epinfo['l'] for epinfo in eval_epinfobuf]))
+
         if update_fn is not None:
             update_fn(update)
 
@@ -203,6 +210,7 @@ def learn(*, network, env, total_timesteps, eval_env = None, seed=None, nsteps=2
             if eval_env is not None:
                 logger.logkv('eval_eprewmean', safemean([epinfo['r'] for epinfo in eval_epinfobuf]) )
                 logger.logkv('eval_eplenmean', safemean([epinfo['l'] for epinfo in eval_epinfobuf]) )
+
             logger.logkv('misc/time_elapsed', tnow - tfirststart)
             for (lossval, lossname) in zip(lossvals, model.loss_names):
                 logger.logkv('loss/' + lossname, lossval)

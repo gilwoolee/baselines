@@ -22,6 +22,7 @@ class Runner(AbstractEnvRunner):
         mb_obs, mb_rewards, mb_actions, mb_values, mb_dones, mb_neglogpacs = [],[],[],[],[],[]
         mb_states = self.states
         epinfos = []
+
         # For n in range number of steps
         for _ in range(self.nsteps):
             # Given observations, get action value and neglopacs
