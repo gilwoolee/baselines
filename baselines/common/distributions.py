@@ -3,6 +3,7 @@ import numpy as np
 import baselines.common.tf_util as U
 from baselines.a2c.utils import fc
 from tensorflow.python.ops import math_ops
+import tensorflow_probability as tfp
 
 class Pd(object):
     """
@@ -39,7 +40,7 @@ class PdType(object):
         raise NotImplementedError
     def pdfromflat(self, flat):
         return self.pdclass()(flat)
-    def pdfromlatent(self, latent_vector, init_scale, init_bias):
+    def pdfromlatent(self, latent_vector, name, init_scale, init_bias):
         raise NotImplementedError
     def param_shape(self):
         raise NotImplementedError
@@ -61,8 +62,8 @@ class CategoricalPdType(PdType):
         self.ncat = ncat
     def pdclass(self):
         return CategoricalPd
-    def pdfromlatent(self, latent_vector, init_scale=1.0, init_bias=0.0):
-        pdparam = _matching_fc(latent_vector, 'pi', self.ncat, init_scale=init_scale, init_bias=init_bias)
+    def pdfromlatent(self, latent_vector, name='pi', init_scale=1.0, init_bias=0.0):
+        pdparam = _matching_fc(latent_vector, name, self.ncat, init_scale=init_scale, init_bias=init_bias)
         return self.pdfromflat(pdparam), pdparam
 
     def param_shape(self):
@@ -82,8 +83,8 @@ class MultiCategoricalPdType(PdType):
     def pdfromflat(self, flat):
         return MultiCategoricalPd(self.ncats, flat)
 
-    def pdfromlatent(self, latent, init_scale=1.0, init_bias=0.0):
-        pdparam = _matching_fc(latent, 'pi', self.ncats.sum(), init_scale=init_scale, init_bias=init_bias)
+    def pdfromlatent(self, latent, name='pi', init_scale=1.0, init_bias=0.0):
+        pdparam = _matching_fc(latent, name, self.ncats.sum(), init_scale=init_scale, init_bias=init_bias)
         return self.pdfromflat(pdparam), pdparam
 
     def param_shape(self):
@@ -99,14 +100,35 @@ class DiagGaussianPdType(PdType):
     def pdclass(self):
         return DiagGaussianPd
 
-    def pdfromlatent(self, latent_vector, init_scale=1.0, init_bias=0.0):
-        mean = _matching_fc(latent_vector, 'pi', self.size, init_scale=init_scale, init_bias=init_bias)
-        logstd = tf.get_variable(name='pi/logstd', shape=[1, self.size], initializer=tf.zeros_initializer())
+    def pdfromlatent(self, latent_vector, name='pi', init_scale=1.0, init_bias=0.0):
+        mean = _matching_fc(latent_vector, name, self.size, init_scale=init_scale, init_bias=init_bias)
+        logstd = tf.get_variable(name=name+'/logstd', shape=[1, self.size], initializer=tf.zeros_initializer())
         pdparam = tf.concat([mean, mean * 0.0 + logstd], axis=1)
         return self.pdfromflat(pdparam), mean
 
     def param_shape(self):
         return [2*self.size]
+    def sample_shape(self):
+        return [self.size]
+    def sample_dtype(self):
+        return tf.float32
+
+class TruncatedGaussianPdType(PdType):
+    def __init__(self, size):
+        self.size = size
+
+    def pdclass(self):
+        return TruncatedGaussianPd
+
+    def pdfromlatent(self, latent_vector, name='res', init_scale=0.01, init_bias=0.1):
+        mean = _matching_fc(latent_vector, name, self.size, init_scale=init_scale, init_bias=init_bias)
+        logstd = tf.get_variable(name=name+"/logstd", shape=[1, self.size], initializer=tf.constant_initializer(-2.3))
+        logtrunc = tf.get_variable(name=name+"/logtrunc", shape=[1, self.size], initializer=tf.constant_initializer(-2.3))
+        pdparam = tf.concat([mean, mean * 0.0 + logstd, mean * 0.0 + logtrunc], axis=1)
+        return self.pdfromflat(pdparam), mean
+
+    def param_shape(self):
+        return [3*self.size]
     def sample_shape(self):
         return [self.size]
     def sample_dtype(self):
@@ -123,8 +145,8 @@ class BernoulliPdType(PdType):
         return [self.size]
     def sample_dtype(self):
         return tf.int32
-    def pdfromlatent(self, latent_vector, init_scale=1.0, init_bias=0.0):
-        pdparam = _matching_fc(latent_vector, 'pi', self.size, init_scale=init_scale, init_bias=init_bias)
+    def pdfromlatent(self, latent_vector, name='pi', init_scale=1.0, init_bias=0.0):
+        pdparam = _matching_fc(latent_vector, name, self.size, init_scale=init_scale, init_bias=init_bias)
         return self.pdfromflat(pdparam), pdparam
 
 # WRONG SECOND DERIVATIVES
@@ -250,6 +272,55 @@ class DiagGaussianPd(Pd):
     def fromflat(cls, flat):
         return cls(flat)
 
+class TruncatedGaussianPd(Pd):
+    def __init__(self, flat):
+        self.flat = flat
+        mean, logstd, logtrunc = tf.split(axis=len(flat.shape)-1, num_or_size_splits=3, value=flat)
+        self.mean = mean
+        self.logstd = logstd
+        self.std = tf.exp(logstd)
+        self.logtrunc = logtrunc
+        self.trunc = tf.clip_by_value(tf.exp(logtrunc), 0.01, 0.2)
+    def flatparam(self):
+        return self.flat
+    def mode(self):
+        return self.mean
+
+    def neglogp(self, x):
+        pd = self._pd()
+        return -tf.squeeze(pd.log_prob(x))
+
+    def entropy(self):
+        return self._pd().entropy()
+
+    def kl(self, other):
+        pd = self._pd()
+        cross_ent = pd.cross_entopy(other)
+        ent = pd.entropy()
+        return cross_ent - ent
+
+        pd = self._pd()
+        return pd.entropy()
+
+    def sample(self):
+        pd = self._pd()
+        sample = pd.sample([1])
+        sample = tf.reshape(sample, self.mean.shape)
+        return sample
+
+    def _pd(self):
+        return tfp.distributions.TruncatedNormal(loc=self.mean,
+                scale=self.std,
+                low=self.mean - self.trunc,
+                high=self.mean + self.trunc)
+
+    @classmethod
+    def fromflat(cls, flat):
+        return cls(flat)
+
+
+
+
 
 class BernoulliPd(Pd):
     def __init__(self, logits):
@@ -275,11 +346,14 @@ class BernoulliPd(Pd):
     def fromflat(cls, flat):
         return cls(flat)
 
-def make_pdtype(ac_space):
+def make_pdtype(ac_space, truncated=False):
     from gym import spaces
     if isinstance(ac_space, spaces.Box):
         assert len(ac_space.shape) == 1
-        return DiagGaussianPdType(ac_space.shape[0])
+        if not truncated:
+            return DiagGaussianPdType(ac_space.shape[0])
+        else:
+            return TruncatedGaussianPdType(ac_space.shape[0])
     elif isinstance(ac_space, spaces.Discrete):
         return CategoricalPdType(ac_space.n)
     elif isinstance(ac_space, spaces.MultiDiscrete):
