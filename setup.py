@@ -32,13 +32,13 @@ setup(name='baselines',
       packages=[package for package in find_packages()
                 if package.startswith('baselines')],
       install_requires=[
-          'gym<0.14',
+          'gym',
           'scipy',
           'tqdm',
           'joblib',
           'dill',
           'progressbar2',
-          'cloudpickle',
+          'cloudpickle==1.2.0',
           'click',
           'opencv-python'
       ],
