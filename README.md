@@ -98,6 +98,8 @@ python -m baselines.run --alg=deepq --env=PongNoFrameskip-v4 --num_timesteps=1e6
 ```
 
 ## Saving, loading and visualizing models
+
+### Saving and loading the model
 The algorithms serialization API is not properly unified yet; however, there is a simple method to save / restore trained models. 
 `--save_path` and `--load_path` command-line option loads the tensorflow state from a given path before training, and saves it after the training, respectively. 
 Let's imagine you'd like to train ppo2 on Atari Pong,  save the model and then later visualize what has it learnt.
@@ -111,8 +113,17 @@ python -m baselines.run --alg=ppo2 --env=PongNoFrameskip-v4 --num_timesteps=0 --
 
 *NOTE:* Mujoco environments require normalization to work properly, so we wrap them with VecNormalize wrapper. Currently, to ensure the models are saved with normalization (so that trained models can be restored and run without further training) the normalization coefficients are saved as tensorflow variables. This can decrease the performance somewhat, so if you require high-throughput steps with Mujoco and do not need saving/restoring the models, it may make sense to use numpy normalization instead. To do that, set 'use_tf=False` in [baselines/run.py](baselines/run.py#L116). 
 
-## Loading and vizualizing learning curves and other training metrics
-See [here](docs/viz/viz.ipynb) for instructions on how to load and display the training data. 
+### Logging and vizualizing learning curves and other training metrics
+By default, all summary data, including progress, standard output, is saved to a unique directory in a temp folder, specified by a call to Python's [tempfile.gettempdir()](https://docs.python.org/3/library/tempfile.html#tempfile.gettempdir).
+The directory can be changed with the `--log_path` command-line option.
+```bash
+python -m baselines.run --alg=ppo2 --env=PongNoFrameskip-v4 --num_timesteps=2e7 --save_path=~/models/pong_20M_ppo2 --log_path=~/logs/Pong/
+```
+*NOTE:* Please be aware that the logger will overwrite files of the same name in an existing directory, thus it's recommended that folder names be given a unique timestamp to prevent overwritten logs.
+
+Another way the temp directory can be changed is through the use of the `$OPENAI_LOGDIR` environment variable.
+
+For examples on how to load and display the training data, see [here](docs/viz/viz.ipynb).
 
 ## Subpackages
 
@@ -139,7 +150,7 @@ respectively. Note that these results may be not on the latest version of the co
 To cite this repository in publications:
 
     @misc{baselines,
-      author = {Dhariwal, Prafulla and Hesse, Christopher and Klimov, Oleg and Nichol, Alex and Plappert, Matthias and Radford, Alec and Schulman, John and Sidor, Szymon and Wu, Yuhuai and Zhokhov, Peter},
+      author = {Dhariwal, Prafulla and Hesse, Christopher and Klimov, Oleg and Nichol, Alex and Plappert, Matthias and Radford, Alec and Schulman, John and Sidor, Szymon and Tan, Zhenyu and Wu, Yuhuai and Zhokhov, Peter},
       title = {OpenAI Baselines},
       year = {2017},
       publisher = {GitHub},
