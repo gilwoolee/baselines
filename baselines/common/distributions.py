@@ -66,6 +66,7 @@ class CategoricalPdType(PdType):
     def sample_shape(self):
         return []
     def sample_dtype(self):
+        return tf.int32
 
 class DiagGaussianPdType(PdType):
     def __init__(self, latent_shape, size, init_scale=1.0, init_bias=0.0):
