@@ -330,54 +330,55 @@ def get_available_gpus(session_config=None):
 # Saving variables
 # ================================================================
 
-def load_state(fname, sess=None):
-    from baselines import logger
-    logger.warn('load_state method is deprecated, please use load_variables instead')
-    sess = sess or get_session()
+def load_variables(fname, sess=None):
+    # from baselines import logger
+    # logger.warn('load_state method is deprecated, please use load_variables instead')
+    # sess = sess or get_session()
     saver = tf.train.Saver()
-    saver.restore(tf.get_default_session(), fname)
+    saver.restore(sess, fname)
 
-def save_state(fname, sess=None):
-    from baselines import logger
-    logger.warn('save_state method is deprecated, please use save_variables instead')
-    sess = sess or get_session()
-    dirname = os.path.dirname(fname)
-    if any(dirname):
-        os.makedirs(dirname, exist_ok=True)
+def save_variables(fname, sess=None):
+    # from baselines import logger
+    # logger.warn('save_state method is deprecated, please use save_variables instead')
+    # sess = sess or get_session()
+    # dirname = os.path.dirname(fname)
+    # if any(dirname):
+    #     os.makedirs(dirname, exist_ok=True)
     saver = tf.train.Saver()
-    saver.save(tf.get_default_session(), fname)
+    print("fname", fname)
+    saver.save(sess, fname)
 
 # The methods above and below are clearly doing the same thing, and in a rather similar way
 # TODO: ensure there is no subtle differences and remove one
 
-def save_variables(save_path, variables=None, sess=None):
-    import joblib
-    sess = sess or get_session()
-    variables = variables or tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)
+# def save_variables(save_path, variables=None, sess=None):
+#     import joblib
+#     sess = sess or get_session()
+#     variables = variables or tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)
 
-    ps = sess.run(variables)
-    save_dict = {v.name: value for v, value in zip(variables, ps)}
-    dirname = os.path.dirname(save_path)
-    if any(dirname):
-        os.makedirs(dirname, exist_ok=True)
-    joblib.dump(save_dict, save_path)
+#     ps = sess.run(variables)
+#     save_dict = {v.name: value for v, value in zip(variables, ps)}
+#     dirname = os.path.dirname(save_path)
+#     if any(dirname):
+#         os.makedirs(dirname, exist_ok=True)
+#     joblib.dump(save_dict, save_path)
 
-def load_variables(load_path, variables=None, sess=None):
-    import joblib
-    sess = sess or get_session()
-    variables = variables or tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)
+# def load_variables(load_path, variables=None, sess=None):
+#     import joblib
+#     sess = sess or get_session()
+#     variables = variables or tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)
 
-    loaded_params = joblib.load(os.path.expanduser(load_path))
-    restores = []
-    if isinstance(loaded_params, list):
-        assert len(loaded_params) == len(variables), 'number of variables loaded mismatches len(variables)'
-        for d, v in zip(loaded_params, variables):
-            restores.append(v.assign(d))
-    else:
-        for v in variables:
-            restores.append(v.assign(loaded_params[v.name]))
+#     loaded_params = joblib.load(os.path.expanduser(load_path))
+#     restores = []
+#     if isinstance(loaded_params, list):
+#         assert len(loaded_params) == len(variables), 'number of variables loaded mismatches len(variables)'
+#         for d, v in zip(loaded_params, variables):
+#             restores.append(v.assign(d))
+#     else:
+#         for v in variables:
+#             restores.append(v.assign(loaded_params[v.name]))
 
-    sess.run(restores)
+#     sess.run(restores)
 
 # ================================================================
 # Shape adjustment for feeding into tf placeholders

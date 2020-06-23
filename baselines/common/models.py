@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
 from baselines.a2c import utils
-from baselines.a2c.utils import conv, fc, conv_to_fc, batch_to_seq, seq_to_batch
+from baselines.a2c.utils import fc#conv, fc, conv_to_fc, batch_to_seq, seq_to_batch
 from baselines.common.mpi_running_mean_std import RunningMeanStd
 
 mapping = {}
@@ -34,7 +34,7 @@ def build_impala_cnn(unscaled_images, depths=[16,32,32], **conv_kwargs):
     layer_num = 0
 
     def get_layer_num_str():
-        nonlocal layer_num
+        global layer_num
         num_str = str(layer_num)
         layer_num += 1
         return num_str

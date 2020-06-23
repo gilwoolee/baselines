@@ -10,7 +10,7 @@ class Runner(AbstractEnvRunner):
     run():
     - Make a mini batch
     """
-    def __init__(self, *, env, model, nsteps, gamma, lam):
+    def __init__(self, env, model, nsteps, gamma, lam):
         super().__init__(env=env, model=model, nsteps=nsteps)
         # Lambda used in GAE (General Advantage Estimation)
         self.lam = lam
