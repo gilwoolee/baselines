@@ -2,7 +2,7 @@ import time
 import numpy as np
 import tensorflow as tf
 import os.path as osp
-# from baselines import logger
+from baselines import logger
 from collections import deque
 from baselines.common import explained_variance, set_global_seeds
 from baselines.common.models import get_network_builder
@@ -10,7 +10,7 @@ try:
     from mpi4py import MPI
 except ImportError:
     MPI = None
-# from baselines.ppo2.runner import Runner
+from baselines.ppo2.runner import Runner
 
 def constfn(val):
     def f(_):
@@ -85,8 +85,7 @@ def learn(network, env, total_timesteps, eval_env = None, seed=None, nsteps=2048
     total_timesteps = int(total_timesteps)
 
     # Get the nb of env
-    # nenvs = env.num_envs
-    nenvs = 1
+    nenvs = env.num_envs
 
     # Get state_space and action_space
     ob_space = env.observation_space
@@ -115,17 +114,18 @@ def learn(network, env, total_timesteps, eval_env = None, seed=None, nsteps=2048
         ckpt = tf.train.Checkpoint(model=model)
         manager = tf.train.CheckpointManager(ckpt, load_path, max_to_keep=None)
         ckpt.restore(manager.latest_checkpoint)
+        print("PPO2 Restored " + load_path)
 
     # Instantiate the runner object
-    # runner = Runner(env=env, model=model, nsteps=nsteps, gamma=gamma, lam=lam)
-    # if eval_env is not None:
-    #     eval_runner = Runner(env = eval_env, model = model, nsteps = nsteps, gamma = gamma, lam= lam)
+    runner = Runner(env=env, model=model, nsteps=nsteps, gamma=gamma, lam=lam)
+    if eval_env is not None:
+        eval_runner = Runner(env = eval_env, model = model, nsteps = nsteps, gamma = gamma, lam= lam)
+
     epinfobuf = deque(maxlen=100)
     if eval_env is not None:
         eval_epinfobuf = deque(maxlen=100)
 
     # Start total timer
-
     tfirststart = time.perf_counter()
 
     nupdates = total_timesteps//nbatch

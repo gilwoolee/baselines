@@ -1,7 +1,7 @@
 import tensorflow as tf
 from baselines.a2c.utils import fc
 from baselines.common.distributions import make_pdtype
-
+from baselines.common.models import get_network_builder
 import gym
 
 
