@@ -66,6 +66,56 @@ def mlp(num_layers=2, num_hidden=64, activation=tf.tanh):
     return network_fn
 
 
+@register("brl_mlp")
+def brl_mlp(obs_dim, num_layers=2, num_hidden=64, activation=tf.tanh, layer_norm=False):
+    """
+    Belief-feature encoder and state-encoder outputs become input to
+    a stack of fully-connected layers
+    to be used in a policy / q-function approximator
+
+    Parameters:
+    ----------
+
+    obs_dim: int      dimension of observation. Rest is considered as belief feature.
+
+    num_layers: int   number of fully-connected layers (default: 2)
+
+    num_hidden: int   size of fully-connected layers (default: 64)
+
+    activation:       activation function (default: tf.tanh)
+
+    Returns:
+    -------
+
+    function that builds belief-state-encoded network with a given input tensor / placeholder
+    """
+    def network_fn(input_shape):
+        print('input shape is {}'.format(input_shape))
+        x_input = tf.keras.Input(shape=input_shape)
+        h = x_input
+
+        obs_h = h[:, :obs_dim]
+        belief_h = h[:, obs_dim:]
+
+        for i in range(num_layers):
+          obs_h = tf.keras.layers.Dense(units=num_hidden, kernel_initializer=ortho_init(np.sqrt(2)),
+                                    name='brl_obs_mlp_fc{}'.format(i), activation=activation)(obs_h)
+
+        for i in range(num_layers):
+          belief_h = tf.keras.layers.Dense(units=num_hidden, kernel_initializer=ortho_init(np.sqrt(2)),
+                                    name='brl_belief_mlp_fc{}'.format(i), activation=activation)(belief_h)
+
+        h = tf.concat([obs_h, belief_h], 1)
+        for i in range(num_layers):
+          h = tf.keras.layers.Dense(units=num_hidden, kernel_initializer=ortho_init(np.sqrt(2)),
+                                    name='brl_mlp_fc{}'.format(i), activation=activation)(h)
+
+        network = tf.keras.Model(inputs=[x_input], outputs=[h])
+        return network
+
+    return network_fn
+
+
 @register("cnn")
 def cnn(**conv_kwargs):
     def network_fn(input_shape):
@@ -98,7 +148,6 @@ def conv_only(convs=[(32, 8, 4), (64, 4, 2), (64, 3, 1)], **conv_kwargs):
         network = tf.keras.Model(inputs=[x_input], outputs=[h])
         return network
     return network_fn
-
 
 def get_network_builder(name):
     """
