@@ -196,6 +196,14 @@ def learn(network, env, total_timesteps, eval_env = None, seed=None, nsteps=2048
 
             logger.dumpkvs()
 
+        if save_interval and (update % save_interval == 0 or update == 1) and logger.get_dir() and (MPI is None or MPI.COMM_WORLD.Get_rank() == 0):
+            save_path = osp.join(logger.get_dir(), 'checkpoints')
+            os.makedirs(save_path, exist_ok=True)
+            ckpt = tf.train.Checkpoint(model=model)
+            manager = tf.train.CheckpointManager(ckpt, save_path, max_to_keep=None)
+            manager.save()
+
+
     return model
 # Avoid division error when calculate the mean (in our case if epinfo is empty returns np.nan, not return an error)
 def safemean(xs):
