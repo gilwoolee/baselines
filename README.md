@@ -1,4 +1,4 @@
-This is a fork of OpenAI Baselines' [tf2](https://github.com/openai/baselines/tree/tf2) branch (supports Tensorflow2). It currently supports Tensorflow 2.2.0.
+This is a fork of OpenAI Baselines' [tf2](https://github.com/openai/baselines/tree/tf2) branch. It currently supports Tensorflow 2.2.0 with Python 3.8.
 
 
 **Status:** Active (under active development, breaking changes may occur)
