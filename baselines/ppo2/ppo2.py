@@ -2,6 +2,7 @@ import time
 import numpy as np
 import tensorflow as tf
 import os.path as osp
+import os
 from baselines import logger
 from collections import deque
 from baselines.common import explained_variance, set_global_seeds
@@ -202,7 +203,7 @@ def learn(network, env, total_timesteps, eval_env = None, seed=None, nsteps=2048
             ckpt = tf.train.Checkpoint(model=model)
             manager = tf.train.CheckpointManager(ckpt, save_path, max_to_keep=None)
             manager.save()
-
+            print("Saving to {}".format(save_path))
 
     return model
 # Avoid division error when calculate the mean (in our case if epinfo is empty returns np.nan, not return an error)
